@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { PlayerNameInput } from '@/features/game/components/PlayerNameInput';
 import { GameSetupInput } from '@/features/game/components/GameSetupInput';
+import { useGameStore } from '@/store/gameStore';
 
 type GameSetupStep = 'players' | 'setup';
 
@@ -12,15 +13,15 @@ export default function Home() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState<GameSetupStep>('players');
-  const [players, setPlayers] = useState<{ player1: string; player2: string } | null>(null);
+  const { setPlayers, initializeGame } = useGameStore();
 
   const handlePlayerNames = (player1: string, player2: string) => {
-    setPlayers({ player1, player2 });
+    setPlayers(player1, player2);
     setStep('setup');
   };
 
   const handleGameSetup = (monthCount: 3 | 6 | 12, parentPlayer: string) => {
-    // TODO: ゲーム設定を保存する処理を実装
+    initializeGame(monthCount, parentPlayer);
     setIsModalOpen(false);
     router.push('/game');
   };
@@ -28,7 +29,6 @@ export default function Home() {
   const handleModalClose = () => {
     setIsModalOpen(false);
     setStep('players');
-    setPlayers(null);
   };
 
   return (
@@ -51,10 +51,8 @@ export default function Home() {
             onSubmit={handlePlayerNames}
             onClose={handleModalClose}
           />
-        ) : players && (
+        ) : (
           <GameSetupInput
-            player1={players.player1}
-            player2={players.player2}
             onSubmit={handleGameSetup}
           />
         )}

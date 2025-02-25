@@ -6,21 +6,25 @@ import { GameBoard } from '@/features/game/components/GameBoard';
 import { ScoreModal } from '@/features/game/components/ScoreModal';
 import { MONTHS } from '@/constants/months';
 import type { GameState, Player } from '@/types/game';
+import { useRouter } from 'next/navigation';
+import { useGameStore } from '@/store/gameStore';
 
 export default function Game() {
+  const router = useRouter();
+  const { gameState, updateGameState, resetGame } = useGameStore();
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const [showMonthPopup, setShowMonthPopup] = useState(true);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [scoringPlayerIndex, setScoringPlayerIndex] = useState<0 | 1 | null>(null);
-  const [gameState, setGameState] = useState<GameState>({
-    players: [
-      { name: "プレイヤー1", score: 0, isParent: true },
-      { name: "プレイヤー2", score: 0, isParent: false }
-    ],
-    currentMonth: 0,
-    monthCount: 12,
-    koikoiPlayer: null
-  });
+
+  // gameStateがnullの場合はトップページにリダイレクト
+  useEffect(() => {
+    if (!gameState) {
+      router.push('/');
+    }
+  }, [gameState, router]);
+
+  if (!gameState) return null;
 
   // 初回レンダリング時にポップアップを表示
   useEffect(() => {
@@ -31,23 +35,32 @@ export default function Game() {
     setShowMonthPopup(false);
   };
 
-  // 次の月へ進む処理
+  // ゲーム終了判定
+  const isGameEnd = currentMonthIndex === 11; // 12月（配列では11）
+
+  // 次の月へ進む処理を更新
   const proceedToNextMonth = () => {
+    if (isGameEnd) {
+      navigateToResult();
+      return;
+    }
+
     const nextMonthIndex = currentMonthIndex + 1;
     setCurrentMonthIndex(nextMonthIndex);
-    setGameState(prev => ({
+    
+    updateGameState((prev: GameState) => ({
       ...prev,
       currentMonth: nextMonthIndex,
       koikoiPlayer: null
     }));
-    // 少し遅延を入れてポップアップを表示（前のポップアップとの重複を避ける）
+
     setTimeout(() => {
       setShowMonthPopup(true);
     }, 100);
   };
 
   const handleKoikoi = (playerIndex: 0 | 1) => {
-    setGameState(prev => ({
+    updateGameState((prev: GameState) => ({
       ...prev,
       koikoiPlayer: playerIndex
     }));
@@ -80,12 +93,12 @@ export default function Game() {
   };
 
   const handleScoreSubmit = (baseScore: number) => {
-    if (scoringPlayerIndex === null) return;
+    if (scoringPlayerIndex === null || !gameState) return;
 
     const finalScore = calculateFinalScore(baseScore, scoringPlayerIndex);
 
     // 得点を更新
-    setGameState(prev => ({
+    updateGameState((prev: GameState) => ({
       ...prev,
       players: prev.players.map((player, index) => ({
         ...player,
@@ -107,6 +120,17 @@ export default function Game() {
       return `${gameState.players[gameState.koikoiPlayer].name}がこいこいしています`;
     }
     return null;
+  };
+
+  // 結果画面への遷移を更新
+  const navigateToResult = () => {
+    const params = new URLSearchParams({
+      player1Name: gameState.players[0].name,
+      player1Score: gameState.players[0].score.toString(),
+      player2Name: gameState.players[1].name,
+      player2Score: gameState.players[1].score.toString()
+    });
+    router.push(`/result?${params.toString()}`);
   };
 
   return (

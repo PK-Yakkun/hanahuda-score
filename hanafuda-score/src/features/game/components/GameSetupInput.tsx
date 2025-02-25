@@ -1,18 +1,23 @@
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useGameStore } from '@/store/gameStore';
 
 type GameSetupInputProps = {
-  player1: string;
-  player2: string;
   onSubmit: (monthCount: 3 | 6 | 12, parentPlayer: string) => void;
 };
 
-export const GameSetupInput = ({ player1, player2, onSubmit }: GameSetupInputProps) => {
+export const GameSetupInput = ({ onSubmit }: GameSetupInputProps) => {
+  const router = useRouter();
   const [monthCount, setMonthCount] = useState<3 | 6 | 12 | null>(null);
-  
+  const { players, initializeGame } = useGameStore();
+
+  if (!players) return null;
+
   const handleParentSelect = (parentPlayer: string) => {
-    if (monthCount) {
-      onSubmit(monthCount, parentPlayer);
-    }
+    if (!monthCount || !players) return;
+    
+    initializeGame(monthCount, parentPlayer);
+    router.push('/game');
   };
 
   return (
@@ -42,7 +47,7 @@ export const GameSetupInput = ({ player1, player2, onSubmit }: GameSetupInputPro
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-4">親を選択してください</h3>
           <div className="grid grid-cols-2 gap-3">
-            {[player1, player2].map((player) => (
+            {[players[0].name, players[1].name].map((player) => (
               <button
                 key={player}
                 onClick={() => handleParentSelect(player)}
