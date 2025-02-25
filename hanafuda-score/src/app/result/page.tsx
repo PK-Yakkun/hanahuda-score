@@ -1,51 +1,34 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
 import { useGameStore } from '@/store/gameStore';
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { PlayerNameInput } from '@/features/game/components/PlayerNameInput';
 import { GameSetupInput } from '@/features/game/components/GameSetupInput';
 
-type GameResult = {
-  players: {
-    name: string;
-    score: number;
-  }[];
-};
-
 export default function Result() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { players, resetGame } = useGameStore();
+  const { gameState, players, resetGame } = useGameStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState<'players' | 'setup'>('players');
 
-  // URLパラメータからゲーム結果を取得
-  const gameResult: GameResult = {
-    players: [
-      {
-        name: searchParams.get('player1Name') || '',
-        score: Number(searchParams.get('player1Score')) || 0
-      },
-      {
-        name: searchParams.get('player2Name') || '',
-        score: Number(searchParams.get('player2Score')) || 0
-      }
-    ]
-  };
+  // gameStateがない場合はトップページにリダイレクト
+  if (!gameState) {
+    router.push('/');
+    return null;
+  }
 
   // 勝者を判定
-  const winner = gameResult.players[0].score > gameResult.players[1].score
-    ? gameResult.players[0]
-    : gameResult.players[1];
+  const winner = gameState.players[0].score > gameState.players[1].score
+    ? gameState.players[0]
+    : gameState.players[1];
 
-  const isDraw = gameResult.players[0].score === gameResult.players[1].score;
+  const isDraw = gameState.players[0].score === gameState.players[1].score;
 
   const handleRestart = () => {
     if (players) {
-      setStep('setup');  // 親選択画面から開始
+      setStep('setup');
       setIsModalOpen(true);
     } else {
       router.push('/');
@@ -70,7 +53,7 @@ export default function Result() {
 
         {/* スコア表示 */}
         <div className="space-y-4 mb-12">
-          {gameResult.players.map((player, index) => (
+          {gameState.players.map((player, index) => (
             <div
               key={index}
               className="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
@@ -101,6 +84,7 @@ export default function Result() {
         </div>
       </div>
 
+      {/* 再戦用モーダル */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

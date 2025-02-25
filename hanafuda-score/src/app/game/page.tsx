@@ -35,8 +35,8 @@ export default function Game() {
     setShowMonthPopup(false);
   };
 
-  // ゲーム終了判定
-  const isGameEnd = currentMonthIndex === 11; // 12月（配列では11）
+  // ゲーム終了判定を修正
+  const isGameEnd = currentMonthIndex === (gameState?.monthCount || 12) - 1;
 
   // 次の月へ進む処理を更新
   const proceedToNextMonth = () => {
@@ -124,13 +124,7 @@ export default function Game() {
 
   // 結果画面への遷移を更新
   const navigateToResult = () => {
-    const params = new URLSearchParams({
-      player1Name: gameState.players[0].name,
-      player1Score: gameState.players[0].score.toString(),
-      player2Name: gameState.players[1].name,
-      player2Score: gameState.players[1].score.toString()
-    });
-    router.push(`/result?${params.toString()}`);
+    router.push('/result');
   };
 
   return (
