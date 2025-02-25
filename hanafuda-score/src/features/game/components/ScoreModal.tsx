@@ -1,6 +1,12 @@
 import { Modal } from '@/components/ui/Modal';
-import { roles } from '@/constants/roles';
+import { roles, Role } from '@/constants/roles';
 import { useState } from 'react';
+import { PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
+
+type RoleSelection = {
+  roleId: number;
+  count: number;
+};
 
 type ScoreModalProps = {
   isOpen: boolean;
@@ -15,20 +21,48 @@ export const ScoreModal = ({
   onSubmit,
   isKoikoi
 }: ScoreModalProps) => {
-  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<RoleSelection[]>([]);
 
-  const handleRoleToggle = (roleId: number) => {
+  const handleRoleToggle = (role: Role) => {
+    setSelectedRoles(prev => {
+      // 既に選択されている場合は削除
+      if (prev.some(r => r.roleId === role.id)) {
+        return prev.filter(r => r.roleId !== role.id);
+      }
+
+      // 競合する役を削除
+      const newSelection = prev.filter(r => 
+        !role.conflicts?.includes(r.roleId)
+      );
+
+      // 新しい役を追加
+      return [...newSelection, { 
+        roleId: role.id, 
+        count: role.countable ? 0 : 1 
+      }];
+    });
+  };
+
+  const handleCountChange = (roleId: number, increment: boolean) => {
     setSelectedRoles(prev => 
-      prev.includes(roleId)
-        ? prev.filter(id => id !== roleId)
-        : [...prev, roleId]
+      prev.map(role => 
+        role.roleId === roleId
+          ? { ...role, count: increment ? role.count + 1 : Math.max(0, role.count - 1) }
+          : role
+      )
     );
   };
 
   const calculateBaseScore = () => {
-    return selectedRoles.reduce((total, roleId) => {
-      const role = roles.find(r => r.id === roleId);
-      return total + (role?.score || 0);
+    return selectedRoles.reduce((total, selection) => {
+      const role = roles.find(r => r.id === selection.roleId);
+      if (!role) return total;
+
+      const countScore = role.countable
+        ? selection.count * (role.perCount || 0)
+        : role.baseScore;
+
+      return total + countScore;
     }, 0);
   };
 
@@ -47,20 +81,45 @@ export const ScoreModal = ({
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-2">
           {roles.map(role => (
-            <button
+            <div
               key={role.id}
-              onClick={() => handleRoleToggle(role.id)}
-              className={`
-                p-2 rounded-md text-sm text-left
-                ${selectedRoles.includes(role.id)
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }
-              `}
+              className="space-y-2"
             >
-              <div>{role.label}</div>
-              <div className="text-xs">{role.score}点</div>
-            </button>
+              <button
+                onClick={() => handleRoleToggle(role)}
+                className={`
+                  w-full p-2 rounded-md text-sm text-left
+                  ${selectedRoles.some(r => r.roleId === role.id)
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }
+                `}
+              >
+                <div>{role.label}</div>
+                <div className="text-xs">{role.baseScore}点</div>
+              </button>
+
+              {/* 枚数カウンター */}
+              {role.countable && selectedRoles.some(r => r.roleId === role.id) && (
+                <div className="flex items-center justify-between px-2">
+                  <button
+                    onClick={() => handleCountChange(role.id, false)}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    <MinusIcon className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm">
+                    {selectedRoles.find(r => r.roleId === role.id)?.count || 0}枚
+                  </span>
+                  <button
+                    onClick={() => handleCountChange(role.id, true)}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
 
