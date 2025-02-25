@@ -43,7 +43,7 @@ export const useGameStore = create<GameStore>((set) => ({
           players,
           currentMonth: 0,
           monthCount,
-          koikoiPlayer: null
+          koikoiPlayers: [false, false]
         }
       };
     });

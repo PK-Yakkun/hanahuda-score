@@ -51,7 +51,9 @@ export default function Game() {
     updateGameState((prev: GameState) => ({
       ...prev,
       currentMonth: nextMonthIndex,
-      koikoiPlayer: null
+      koikoiPlayers: prev.koikoiPlayers.map((state, index) => 
+        index === nextMonthIndex ? true : state
+      )
     }));
 
     setTimeout(() => {
@@ -62,7 +64,9 @@ export default function Game() {
   const handleKoikoi = (playerIndex: 0 | 1) => {
     updateGameState((prev: GameState) => ({
       ...prev,
-      koikoiPlayer: playerIndex
+      koikoiPlayers: prev.koikoiPlayers.map((state, index) => 
+        index === playerIndex ? true : state
+      )
     }));
   };
 
@@ -79,8 +83,8 @@ export default function Game() {
   const calculateFinalScore = (baseScore: number, playerIndex: 0 | 1) => {
     let multiplier = 1;
 
-    // こいこいによる2倍
-    if (gameState.koikoiPlayer !== null) {
+    // こいこいによる2倍（どちらかがこいこいしていれば2倍）
+    if (gameState.koikoiPlayers.some(isKoikoi => isKoikoi)) {
       multiplier *= 2;
     }
 
@@ -116,8 +120,14 @@ export default function Game() {
 
   // こいこい状態の表示
   const getKoikoiStatus = () => {
-    if (gameState.koikoiPlayer !== null) {
-      return `${gameState.players[gameState.koikoiPlayer].name}がこいこいしています`;
+    const koikoiPlayers = gameState.players.filter((_, index) => 
+      gameState.koikoiPlayers[index]
+    );
+
+    if (koikoiPlayers.length > 0) {
+      return koikoiPlayers.map(player => 
+        `${player.name}がこいこいしています`
+      ).join('、');
     }
     return null;
   };
@@ -149,6 +159,7 @@ export default function Game() {
         onKoikoi={handleKoikoi}
         onAgari={handleAgari}
         onDraw={handleDraw}
+        koikoiPlayers={gameState.koikoiPlayers}
       />
 
       {/* 月切り替えポップアップ */}
@@ -163,7 +174,7 @@ export default function Game() {
         isOpen={showScoreModal}
         onClose={() => setShowScoreModal(false)}
         onSubmit={handleScoreSubmit}
-        isKoikoi={gameState.koikoiPlayer !== null}
+        isKoikoi={gameState.koikoiPlayers.some(isKoikoi => isKoikoi)}
       />
     </main>
   );
