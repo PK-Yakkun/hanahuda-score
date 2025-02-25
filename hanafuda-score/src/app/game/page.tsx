@@ -51,9 +51,7 @@ export default function Game() {
     updateGameState((prev: GameState) => ({
       ...prev,
       currentMonth: nextMonthIndex,
-      koikoiPlayers: prev.koikoiPlayers.map((state, index) => 
-        index === nextMonthIndex ? true : state
-      )
+      koikoiPlayers: [false, false] // 両プレイヤーのこいこい状態をリセット
     }));
 
     setTimeout(() => {
@@ -61,7 +59,7 @@ export default function Game() {
     }, 100);
   };
 
-  const handleKoikoi = (playerIndex: 0 | 1) => {
+  const handleKoikoi = (playerIndex: number) => {
     updateGameState((prev: GameState) => ({
       ...prev,
       koikoiPlayers: prev.koikoiPlayers.map((state, index) => 
@@ -70,8 +68,8 @@ export default function Game() {
     }));
   };
 
-  const handleAgari = (playerIndex: 0 | 1) => {
-    setScoringPlayerIndex(playerIndex);
+  const handleAgari = (playerIndex: number) => {
+    setScoringPlayerIndex(playerIndex as 0 | 1);
     setShowScoreModal(true);
   };
 
@@ -83,8 +81,9 @@ export default function Game() {
   const calculateFinalScore = (baseScore: number, playerIndex: 0 | 1) => {
     let multiplier = 1;
 
-    // こいこいによる2倍（どちらかがこいこいしていれば2倍）
-    if (gameState.koikoiPlayers.some(isKoikoi => isKoikoi)) {
+    // こいこいによる2倍（相手プレイヤーがこいこいしていた場合のみ）
+    const opponentIndex = playerIndex === 0 ? 1 : 0;
+    if (gameState.koikoiPlayers[opponentIndex]) {
       multiplier *= 2;
     }
 
