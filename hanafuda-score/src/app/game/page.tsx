@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react';
 import { MonthPopup } from '@/components/ui/MonthPopup';
 import { GameBoard } from '@/features/game/components/GameBoard';
+import { ScoreModal } from '@/features/game/components/ScoreModal';
 import { MONTHS } from '@/constants/months';
-import type { GameState } from '@/types/game';
+import type { GameState, Player } from '@/types/game';
 
 export default function Game() {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const [showMonthPopup, setShowMonthPopup] = useState(true);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [scoringPlayerIndex, setScoringPlayerIndex] = useState<0 | 1 | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     players: [
       { name: "プレイヤー1", score: 0, isParent: true },
@@ -30,12 +33,17 @@ export default function Game() {
 
   // 次の月へ進む処理
   const proceedToNextMonth = () => {
+    const nextMonthIndex = currentMonthIndex + 1;
+    setCurrentMonthIndex(nextMonthIndex);
     setGameState(prev => ({
       ...prev,
-      currentMonth: prev.currentMonth + 1,
-      koikoiPlayer: null // こいこい状態をリセット
+      currentMonth: nextMonthIndex,
+      koikoiPlayer: null
     }));
-    setShowMonthPopup(true);
+    // 少し遅延を入れてポップアップを表示（前のポップアップとの重複を避ける）
+    setTimeout(() => {
+      setShowMonthPopup(true);
+    }, 100);
   };
 
   const handleKoikoi = (playerIndex: 0 | 1) => {
@@ -46,11 +54,50 @@ export default function Game() {
   };
 
   const handleAgari = (playerIndex: 0 | 1) => {
-    // TODO: 役選択モーダルを表示する処理を追加
-    console.log(`${gameState.players[playerIndex].name}があがりを選択`);
+    setScoringPlayerIndex(playerIndex);
+    setShowScoreModal(true);
   };
 
   const handleDraw = () => {
+    proceedToNextMonth();
+  };
+
+  // 得点計算と更新
+  const calculateFinalScore = (baseScore: number, playerIndex: 0 | 1) => {
+    let multiplier = 1;
+
+    // こいこいによる2倍
+    if (gameState.koikoiPlayer !== null) {
+      multiplier *= 2;
+    }
+
+    // 7点以上による2倍
+    if (baseScore >= 7) {
+      multiplier *= 2;
+    }
+
+    return baseScore * multiplier;
+  };
+
+  const handleScoreSubmit = (baseScore: number) => {
+    if (scoringPlayerIndex === null) return;
+
+    const finalScore = calculateFinalScore(baseScore, scoringPlayerIndex);
+
+    // 得点を更新
+    setGameState(prev => ({
+      ...prev,
+      players: prev.players.map((player, index) => ({
+        ...player,
+        score: index === scoringPlayerIndex 
+          ? player.score + finalScore 
+          : player.score
+      })) as [Player, Player]
+    }));
+
+    // モーダルを閉じて次の月へ
+    setShowScoreModal(false);
+    setScoringPlayerIndex(null);
     proceedToNextMonth();
   };
 
@@ -91,6 +138,14 @@ export default function Game() {
         month={MONTHS[currentMonthIndex]}
         isVisible={showMonthPopup}
         onClose={handleMonthPopupClose}
+      />
+
+      {/* 役選択モーダル */}
+      <ScoreModal
+        isOpen={showScoreModal}
+        onClose={() => setShowScoreModal(false)}
+        onSubmit={handleScoreSubmit}
+        isKoikoi={gameState.koikoiPlayer !== null}
       />
     </main>
   );
