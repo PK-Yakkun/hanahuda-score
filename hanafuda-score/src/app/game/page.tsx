@@ -170,7 +170,7 @@ export default function Game() {
         isOpen={showScoreModal}
         onClose={() => setShowScoreModal(false)}
         onSubmit={handleScoreSubmit}
-        isKoikoi={gameState.koikoiPlayers.some(isKoikoi => isKoikoi)}
+        isKoikoi={scoringPlayerIndex !== null ? gameState.koikoiPlayers[scoringPlayerIndex === 0 ? 1 : 0] : false}
       />
     </main>
   );
