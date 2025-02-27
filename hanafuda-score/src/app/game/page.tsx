@@ -138,8 +138,6 @@ export default function Game() {
 
   return (
     <main className="min-h-screen p-4">
-      <h1 className="text-2xl font-bold mb-4">ゲーム画面</h1>
-      
       {/* 月表示 */}
       <div className="text-xl font-medium mb-4 text-center">
         現在の月: {MONTHS[currentMonthIndex]}
@@ -159,6 +157,7 @@ export default function Game() {
         onAgari={handleAgari}
         onDraw={handleDraw}
         koikoiPlayers={gameState.koikoiPlayers}
+        currentMonth={currentMonthIndex}
       />
 
       {/* 月切り替えポップアップ */}

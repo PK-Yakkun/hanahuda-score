@@ -17,8 +17,15 @@ export const GameBoard = ({
   onKoikoi,
   onAgari,
   onDraw,
-  koikoiPlayers
-}: GameBoardProps) => {
+  koikoiPlayers,
+  currentMonth
+}: GameBoardProps & { currentMonth: number }) => {
+  // 親の判定（月が偶数か奇数かで親が変わる）
+  const isParent = (index: number) => {
+    const isFirstPlayerParent = currentMonth % 2 === 0;
+    return index === 0 ? isFirstPlayerParent : !isFirstPlayerParent;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {players.map((player, index) => (
@@ -26,7 +33,14 @@ export const GameBoard = ({
           key={index}
           className="p-4 rounded-lg bg-white shadow-md"
         >
-          <div className="text-xl font-bold mb-4">{player.name}</div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-xl font-bold">{player.name}</div>
+            {isParent(index) && (
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white text-sm">
+                親
+              </div>
+            )}
+          </div>
           <div className="text-lg mb-4">得点: {player.score}</div>
           <div className="space-x-2">
             <button
