@@ -21,55 +21,74 @@ export const ScoreModal = ({
   onSubmit,
   isKoikoi
 }: ScoreModalProps) => {
-  const [selectedRoles, setSelectedRoles] = useState<RoleSelection[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
+  const [additionalCounts, setAdditionalCounts] = useState<Record<number, number>>({});
 
   const handleRoleToggle = (role: Role) => {
-    setSelectedRoles(prev => {
-      // 既に選択されている場合は削除
-      if (prev.some(r => r.roleId === role.id)) {
-        return prev.filter(r => r.roleId !== role.id);
+    const roleId = role.id;
+    const roleExists = selectedRoles.includes(roleId);
+
+    if (roleExists) {
+      setSelectedRoles(prev => prev.filter(id => id !== roleId));
+      if (role.countable) {
+        setAdditionalCounts(prev => {
+          const newCounts = { ...prev };
+          delete newCounts[roleId];
+          return newCounts;
+        });
       }
-
-      // 競合する役を削除
-      const newSelection = prev.filter(r => 
-        !role.conflicts?.includes(r.roleId)
-      );
-
-      // 新しい役を追加
-      return [...newSelection, { 
-        roleId: role.id, 
-        count: role.countable ? 0 : 1 
-      }];
-    });
+    } else {
+      setSelectedRoles(prev => [...prev, roleId]);
+      if (role.countable) {
+        setAdditionalCounts(prev => ({
+          ...prev,
+          [roleId]: 0
+        }));
+      }
+    }
   };
 
   const handleCountChange = (roleId: number, increment: boolean) => {
-    setSelectedRoles(prev => 
-      prev.map(role => 
-        role.roleId === roleId
-          ? { ...role, count: increment ? role.count + 1 : Math.max(0, role.count - 1) }
-          : role
-      )
-    );
+    setAdditionalCounts(prev => {
+      const currentCount = prev[roleId] || 0;
+      return {
+        ...prev,
+        [roleId]: increment ? currentCount + 1 : Math.max(0, currentCount - 1)
+      };
+    });
   };
 
-  const calculateBaseScore = () => {
-    return selectedRoles.reduce((total, selection) => {
-      const role = roles.find(r => r.id === selection.roleId);
+  const calculateScore = () => {
+    return selectedRoles.reduce((total, roleId) => {
+      const role = roles.find(r => r.id === roleId);
       if (!role) return total;
 
-      const countScore = role.countable
-        ? selection.count * (role.perCount || 0)
-        : role.baseScore;
+      if (role.countable) {
+        const count = additionalCounts[roleId] || 0;
+        return total + role.baseScore + (count * (role.perCount || 0));
+      }
 
-      return total + countScore;
+      return total + role.baseScore;
     }, 0);
   };
 
+  const calculateMultiplier = (baseScore: number) => {
+    let multiplier = 1;
+    if (isKoikoi) multiplier *= 2;
+    if (baseScore >= 7) multiplier *= 2;
+    return multiplier;
+  };
+
+  const calculateFinalScore = () => {
+    const baseScore = calculateScore();
+    return baseScore * calculateMultiplier(baseScore);
+  };
+
   const handleSubmit = () => {
-    const baseScore = calculateBaseScore();
+    const baseScore = calculateScore();
     onSubmit(baseScore);
-    setSelectedRoles([]); // 選択をリセット
+    setSelectedRoles([]);
+    setAdditionalCounts({});
   };
 
   return (
@@ -89,7 +108,7 @@ export const ScoreModal = ({
                 onClick={() => handleRoleToggle(role)}
                 className={`
                   w-full p-2 rounded-md text-sm text-left
-                  ${selectedRoles.some(r => r.roleId === role.id)
+                  ${selectedRoles.includes(role.id)
                     ? 'bg-red-600 text-white'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                   }
@@ -100,7 +119,7 @@ export const ScoreModal = ({
               </button>
 
               {/* 枚数カウンター */}
-              {role.countable && selectedRoles.some(r => r.roleId === role.id) && (
+              {role.countable && selectedRoles.includes(role.id) && (
                 <div className="flex items-center justify-between px-2">
                   <button
                     onClick={() => handleCountChange(role.id, false)}
@@ -109,7 +128,7 @@ export const ScoreModal = ({
                     <MinusIcon className="w-4 h-4" />
                   </button>
                   <span className="text-sm">
-                    {selectedRoles.find(r => r.roleId === role.id)?.count || 0}枚
+                    {selectedRoles.includes(role.id) ? (additionalCounts[role.id] || 0) : 0}枚
                   </span>
                   <button
                     onClick={() => handleCountChange(role.id, true)}
@@ -124,15 +143,19 @@ export const ScoreModal = ({
         </div>
 
         <div className="pt-4 border-t">
-          <div className="text-lg font-bold mb-2">
-            合計得点: {calculateBaseScore()}点
-            {isKoikoi && <span className="text-red-600">（こいこいによる2倍）</span>}
-            {calculateBaseScore() >= 7 && <span className="text-red-600">（7点以上による2倍）</span>}
+          <div>
+            <div className="text-lg font-bold mb-1">
+              合計得点: {calculateFinalScore()}点
+            </div>
+            <div className="text-xs text-red-600 space-y-0.5">
+              {calculateScore() >= 7 && <div>・7点以上: 2倍</div>}
+              {isKoikoi && <div>・相手こいこい: 2倍</div>}
+            </div>
           </div>
           <button
             onClick={handleSubmit}
             disabled={selectedRoles.length === 0}
-            className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-300"
+            className="w-full mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-300"
           >
             決定
           </button>
