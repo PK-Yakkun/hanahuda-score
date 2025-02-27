@@ -17,6 +17,7 @@ export const GameSetupInput = ({ onSubmit }: GameSetupInputProps) => {
     if (!monthCount || !players) return;
     
     initializeGame(monthCount, parentPlayer);
+    onSubmit(monthCount, parentPlayer);
     router.push('/game');
   };
 

@@ -3,11 +3,6 @@ import { roles, Role } from '@/constants/roles';
 import { useState } from 'react';
 import { PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
 
-type RoleSelection = {
-  roleId: number;
-  count: number;
-};
-
 type ScoreModalProps = {
   isOpen: boolean;
   onClose: () => void;

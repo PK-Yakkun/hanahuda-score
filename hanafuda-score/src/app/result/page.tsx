@@ -9,7 +9,7 @@ import { GameSetupInput } from '@/features/game/components/GameSetupInput';
 
 export default function Result() {
   const router = useRouter();
-  const { gameState, players, resetGame } = useGameStore();
+  const { gameState, players, resetGame, initializeGame, setPlayers } = useGameStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState<'players' | 'setup'>('players');
 
@@ -33,6 +33,20 @@ export default function Result() {
     } else {
       router.push('/');
     }
+  };
+
+  const handlePlayerNamesSubmit = (player1: string, player2: string) => {
+    // プレイヤー名を設定
+    resetGame(); // 前回のゲーム状態をリセット
+    setPlayers(player1, player2); // プレイヤー名を設定
+    setStep('setup');
+  };
+
+  const handleGameSetup = (monthCount: 3 | 6 | 12, parentPlayer: string) => {
+    // ゲーム設定を初期化
+    initializeGame(monthCount, parentPlayer);
+    setIsModalOpen(false);
+    router.push('/game');
   };
 
   return (
@@ -92,16 +106,12 @@ export default function Result() {
       >
         {step === 'players' ? (
           <PlayerNameInput
-            onSubmit={(player1, player2) => {
-              // Handle player names submission
-            }}
+            onSubmit={handlePlayerNamesSubmit}
             onClose={() => setIsModalOpen(false)}
           />
         ) : (
           <GameSetupInput
-            onSubmit={(monthCount, parentPlayer) => {
-              // Handle game setup submission
-            }}
+            onSubmit={handleGameSetup}
           />
         )}
       </Modal>

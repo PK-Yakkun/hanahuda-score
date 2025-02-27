@@ -11,29 +11,27 @@ import { useGameStore } from '@/store/gameStore';
 
 export default function Game() {
   const router = useRouter();
-  const { gameState, updateGameState, resetGame } = useGameStore();
+  const { gameState, updateGameState } = useGameStore();
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const [showMonthPopup, setShowMonthPopup] = useState(true);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [scoringPlayerIndex, setScoringPlayerIndex] = useState<0 | 1 | null>(null);
-
-  // gameStateがnullの場合はトップページにリダイレクト
-  useEffect(() => {
-    if (!gameState) {
-      router.push('/');
-    }
-  }, [gameState, router]);
-
-  if (!gameState) return null;
 
   // 初回レンダリング時にポップアップを表示
   useEffect(() => {
     setShowMonthPopup(true);
   }, []);
 
-  const handleMonthPopupClose = () => {
-    setShowMonthPopup(false);
-  };
+  // gameStateがnullの場合はトップページにリダイレクト
+  useEffect(() => {
+    if (!gameState) {
+      router.push('/');
+      return;
+    }
+  }, [gameState, router]);
+
+  // gameStateがnullの場合はnullを返す
+  if (!gameState) return null;
 
   // ゲーム終了判定を修正
   const isGameEnd = currentMonthIndex === (gameState?.monthCount || 12) - 1;
@@ -164,7 +162,7 @@ export default function Game() {
       <MonthPopup
         month={MONTHS[currentMonthIndex]}
         isVisible={showMonthPopup}
-        onClose={handleMonthPopupClose}
+        onClose={() => setShowMonthPopup(false)}
       />
 
       {/* 役選択モーダル */}
