@@ -20,13 +20,11 @@ export const GameBoard = ({
   koikoiPlayers
 }: GameBoardProps) => {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {players.map((player, index) => (
         <div
           key={index}
-          className={`p-4 rounded-lg bg-white shadow-md ${
-            index === 1 ? 'transform rotate-180' : ''
-          }`}
+          className="p-4 rounded-lg bg-white shadow-md"
         >
           <div className="text-xl font-bold mb-4">{player.name}</div>
           <div className="text-lg mb-4">得点: {player.score}</div>
@@ -53,7 +51,7 @@ export const GameBoard = ({
       ))}
       <button
         onClick={onDraw}
-        className="col-span-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+        className="col-span-1 md:col-span-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
       >
         引き分け
       </button>
